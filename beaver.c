@@ -15,6 +15,7 @@ int main(int argc, char** argv)
 
     if (argc == 1) {
         compile(program, FLAGS);
+        call_or_warn("./out");
     } else if (strcmp(argv[1], "clean") == 0) {
         rm("build/*");
         rm("out");

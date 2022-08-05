@@ -136,24 +136,24 @@ static inline int beaver_bcmd_(
     return 0;
 }
 
-static inline int beaver_call_(char* cmd)
+static inline int call(char* cmd)
 {
     printf(GREEN "[running]" RESET " %s\n", cmd);
     return system(cmd);
 }
 
-static inline void beaver_call_or_panic_(char* cmd)
+static inline void call_or_panic(char* cmd)
 {
-    int r = beaver_call_(cmd);
+    int r = call(cmd);
     if (r != 0) {
         fprintf(stderr, RED "BEAVER PANIC!" RESET ": '%s'\n", cmd);
         exit(1);
     }
 }
 
-static inline void beaver_call_or_warn_(char* cmd)
+static inline void call_or_warn(char* cmd)
 {
-    int r = beaver_call_(cmd);
+    int r = call(cmd);
     if (r != 0) {
         fprintf(stderr, ORANGE "BEAVER WARN!" RESET ": '%s'\n", cmd);
     }
@@ -164,7 +164,7 @@ static inline void beaver_check_build_dir_() {
         return;
     }
 
-    beaver_call_or_warn_("mkdir -p build/inter/");
+    call_or_warn("mkdir -p build/inter/");
 }
 
 static inline void auto_update(char** argv)
@@ -182,7 +182,7 @@ static inline void auto_update(char** argv)
         beaver_bcmd_(&cmd, &len, &size, *argv, 1);
     }
 
-    beaver_call_or_panic_(cmd);
+    call_or_panic(cmd);
     free(cmd);
     exit(0);
 }
@@ -195,7 +195,7 @@ static inline void rm(char* p)
 
     beaver_bcmd_(&cmd, &len, &size, "rm", 0);
     beaver_bcmd_(&cmd, &len, &size, p, 1);
-    beaver_call_or_warn_(cmd);
+    call_or_warn(cmd);
     free(cmd);
 }
 
@@ -207,7 +207,7 @@ static inline void beaver_clean_dir_(char* p)
     beaver_bcmd_(&cmd, &cmd_len, &cmd_size, "rm", 0);
     beaver_bcmd_(&cmd, &cmd_len, &cmd_size, p, 1);
     beaver_bcmd_(&cmd, &cmd_len, &cmd_size, "*", 0);
-    beaver_call_or_panic_(cmd);
+    call_or_panic(cmd);
     free(cmd);
 }
 
@@ -273,7 +273,7 @@ static inline void beaver_compile_module_(char* name, char* flags)
         }
         beaver_bcmd_(&cmd, &cmd_len, &cmd_size, mi->extra_flags, 1);
         beaver_bcmd_(&cmd, &cmd_len, &cmd_size, mi->src, 1);
-        beaver_call_or_panic_(cmd);
+        call_or_panic(cmd);
 
         // reset cmd
         {
@@ -296,7 +296,7 @@ static inline void beaver_compile_module_(char* name, char* flags)
             &cmd, &cmd_len, &cmd_size, beaver_file_from_path_(mi->src), 0);
         beaver_bcmd_(&cmd, &cmd_len, &cmd_size, ".o", 0);
     }
-    beaver_call_or_panic_(cmd);
+    call_or_panic(cmd);
     free(cmd);
     beaver_clean_dir_(BEAVER_DIRECTORY "inter/");
 }
@@ -321,7 +321,7 @@ static inline void compile(char** prog, char* flags)
         beaver_bcmd_(&cmd, &len, &size, *pi, 0);
         beaver_bcmd_(&cmd, &len, &size, ".o", 0);
     }
-    beaver_call_or_panic_(cmd);
+    call_or_panic(cmd);
     free(cmd);
 }
 
