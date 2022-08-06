@@ -54,6 +54,57 @@
 #define BEAVER_DIRECTORY "build/"
 #endif
 
+typedef struct beaver_set_t_ beaver_set_t_;
+struct beaver_set_t_ {
+    char** set;
+    uint32_t alloced;
+};
+
+static inline beaver_set_t_* beaver_set_create_(uint32_t size)
+{
+    beaver_set_t_* s = malloc(sizeof(*s));
+    s->alloced = size << 2;
+    s->set = calloc(s->alloced, sizeof(*s->set));
+    return s;
+}
+
+static inline void beaver_set_free_(beaver_set_t_* s)
+{
+    if (s == NULL) {
+        return;
+    }
+    free(s->set);
+    free(s);
+}
+
+static inline uint32_t beaver_set_pos_(beaver_set_t_* s, char* k)
+{
+    uint32_t h = 8223;
+    {
+        char* iter = k;
+        while (*iter) {
+            h ^= *iter++;
+        }
+    }
+    h %= s->alloced;
+    while (s->set[h] != NULL && strcmp(k, s->set[h])) {
+        h = (h + 1) % s->alloced;
+    }
+    return h;
+}
+
+static inline void beaver_set_insert_(beaver_set_t_* s, char* k)
+{
+    uint32_t pos = beaver_set_pos_(s, k);
+    s->set[pos] = k;
+}
+
+static inline bool beaver_set_contains_(beaver_set_t_* s, char* k)
+{
+    uint32_t pos = beaver_set_pos_(s, k);
+    return s->set[pos] != NULL;
+}
+
 typedef struct module_t module_t;
 struct module_t {
     char name[32];
@@ -222,10 +273,13 @@ static inline char* beaver_file_from_path_(char* p)
     }
 }
 
-static inline void beaver_compile_module_(char* name, char* flags)
+static inline void beaver_compile_module_(char* name, char* flags,
+    beaver_set_t_* compiled_modules, beaver_set_t_* known_sources)
 {
-    // TODO: enable true module dependency currently a bit hacked
-    // check if recompile needed
+    if (beaver_set_contains_(compiled_modules, name)) {
+        return;
+    }
+    beaver_set_insert_(compiled_modules, name);
     module_t* mi;
     {
         bool recomp_needed = 0;
@@ -238,7 +292,8 @@ static inline void beaver_compile_module_(char* name, char* flags)
                 continue;
             }
             if (*mi->module != 0) {
-                beaver_compile_module_(mi->module, flags);
+                beaver_compile_module_(
+                    mi->module, flags, compiled_modules, known_sources);
                 continue;
             }
             beaver_eflags_add_(mi->extra_flags);
@@ -309,23 +364,37 @@ static inline void beaver_compile_module_(char* name, char* flags)
 static inline void compile(char** prog, char* flags)
 {
     beaver_check_build_dir_();
+    beaver_set_t_* compiled_modules = beaver_set_create_(modules_len);
+    beaver_set_t_* known_sources = beaver_set_create_(modules_len);
     char* cmd = NULL;
     uint32_t len = 0;
     uint32_t size = 0;
 
     char** pi;
     for (pi = prog; *pi; ++pi) {
-        beaver_compile_module_(*pi, flags);
+        beaver_compile_module_(*pi, flags, compiled_modules, known_sources);
     }
 
     beaver_bcmd_(&cmd, &len, &size, COMPILER " -o out", 0);
     beaver_bcmd_(&cmd, &len, &size, flags, 1);
     beaver_bcmd_(&cmd, &len, &size, beaver_eflags_, 1);
-    for (pi = prog; *pi; ++pi) {
+    // for (pi = prog; *pi; ++pi) {
+    // beaver_bcmd_(&cmd, &len, &size, BEAVER_DIRECTORY, 1);
+    // beaver_bcmd_(&cmd, &len, &size, *pi, 0);
+    // beaver_bcmd_(&cmd, &len, &size, ".o", 0);
+    //}
+    for (pi = compiled_modules->set;
+         pi != compiled_modules->set + compiled_modules->alloced; pi++) {
+        if (*pi == NULL) {
+            continue;
+        }
         beaver_bcmd_(&cmd, &len, &size, BEAVER_DIRECTORY, 1);
         beaver_bcmd_(&cmd, &len, &size, *pi, 0);
         beaver_bcmd_(&cmd, &len, &size, ".o", 0);
     }
+
+    beaver_set_free_(compiled_modules);
+    beaver_set_free_(known_sources);
     call_or_panic(cmd);
     free(cmd);
 }

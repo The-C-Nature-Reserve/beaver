@@ -1,4 +1,4 @@
-#include "beaver.h"
+#include "src/lib/beaver.h"
 
 #define FLAGS "-g -Wall -Werror -Og"
 
