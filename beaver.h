@@ -87,7 +87,6 @@ static inline bool beaver_should_recomp_(char* file, char* dep)
     return 0;
 }
 
-
 // eflags = extra_flags
 static inline void beaver_eflags_add_(char* flags)
 {
@@ -160,12 +159,13 @@ static inline void call_or_warn(char* cmd)
     }
 }
 
-static inline void beaver_check_build_dir_() {
-    if(access(BEAVER_DIRECTORY"inter/", F_OK) == 0) {
+static inline void beaver_check_build_dir_()
+{
+    if (access(BEAVER_DIRECTORY "inter/", F_OK) == 0) {
         return;
     }
 
-    call_or_warn("mkdir -p "BEAVER_DIRECTORY"inter/");
+    call_or_warn("mkdir -p " BEAVER_DIRECTORY "inter/");
 }
 
 static inline void auto_update(char** argv)
@@ -224,6 +224,7 @@ static inline char* beaver_file_from_path_(char* p)
 
 static inline void beaver_compile_module_(char* name, char* flags)
 {
+    // TODO: enable true module dependency currently a bit hacked
     // check if recompile needed
     module_t* mi;
     {
@@ -289,6 +290,9 @@ static inline void beaver_compile_module_(char* name, char* flags)
     beaver_bcmd_(&cmd, &cmd_len, &cmd_size, ".o", 0);
     for (mi = modules; mi != modules + modules_len; ++mi) {
         if (strcmp(mi->name, name) != 0) {
+            continue;
+        }
+        if (*mi->module != 0) {
             continue;
         }
         beaver_bcmd_(&cmd, &cmd_len, &cmd_size, BEAVER_DIRECTORY "inter/", 1);
