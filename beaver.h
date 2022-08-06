@@ -47,6 +47,7 @@
 #define BEAVER_EXTRA_FLAGS_BUFFER_SIZE 2048
 #endif
 
+// TODO are there other linkers ? how to detect them
 #define LINKER "ld"
 
 #ifndef BEAVER_DIRECTORY
@@ -73,6 +74,7 @@ static inline bool beaver_should_recomp_(char* file, char* dep)
     if (access(file, F_OK) != 0) {
         return 1;
     }
+
     struct stat file_stat;
     struct stat dep_stat;
 
