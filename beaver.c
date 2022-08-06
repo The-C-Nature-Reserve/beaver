@@ -1,4 +1,5 @@
 #include "beaver.h"
+
 #define FLAGS "-g -Wall -Werror -Og"
 
 module_t modules[] = {

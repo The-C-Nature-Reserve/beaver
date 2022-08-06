@@ -49,7 +49,6 @@
 
 #define LINKER "ld"
 
-// TODO: check if it exists
 #ifndef BEAVER_DIRECTORY
 #define BEAVER_DIRECTORY "build/"
 #endif
@@ -164,7 +163,7 @@ static inline void beaver_check_build_dir_() {
         return;
     }
 
-    call_or_warn("mkdir -p build/inter/");
+    call_or_warn("mkdir -p "BEAVER_DIRECTORY"inter/");
 }
 
 static inline void auto_update(char** argv)
