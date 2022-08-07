@@ -9,6 +9,8 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include <pthread.h>
+
 // TODO: windows
 #include <unistd.h>
 
