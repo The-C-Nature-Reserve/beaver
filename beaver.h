@@ -1,6 +1,26 @@
 #ifndef BEAVER_H
 #define BEAVER_H
 
+#ifdef _WIN32
+#undef BEAVER_AUTO_ASYNC
+#endif
+
+#ifdef _WIN64
+#undef BEAVER_AUTO_ASYNC
+#endif
+
+#ifdef BEAVER_AUTO_ASYNC
+
+#ifndef BEAVER_ASYNC
+#define BEAVER_ASYNC 0
+#endif // BEAVER_ASYNC
+
+#ifndef ASAW_LOCATION
+#define ASAW_LOCATION "asaw.c"
+#endif // ASAW_LOCATION
+
+#endif //BEAVER_AUTO_ASYNC
+
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -9,16 +29,21 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#if BEAVER_ASYNC == 1
+
+#include "asaw.h"
 #include <pthread.h>
+
+#endif
 
 // TODO: windows
 #include <unistd.h>
 
 #define GREEN "\033[32m"
 #define RED "\033[31m"
-//#define ORANGE "\033[33m"
 #define ORANGE "\033[93m"
 #define RESET "\033[39m"
+#define BLUE "\033[96m"
 
 #ifndef COMPILER
 
@@ -49,9 +74,6 @@
 #ifndef BEAVER_EXTRA_FLAGS_BUFFER_SIZE
 #define BEAVER_EXTRA_FLAGS_BUFFER_SIZE 16
 #endif
-
-// TODO are there other linkers ? how to detect them
-#define LINKER "ld"
 
 #ifndef BEAVER_DIRECTORY
 #define BEAVER_DIRECTORY "build/"
@@ -211,24 +233,51 @@ static inline void bv_check_build_dir_()
     call_or_warn("mkdir -p " BEAVER_DIRECTORY);
 }
 
+#define recompile() bv_recompile_beaver_(NULL)
+
+static inline void bv_recompile_beaver_(char** argv)
+{
+    char* cmd = NULL;
+    uint32_t len = 0;
+    uint32_t size = 0;
+
+#ifndef BEAVER_AUTO_ASYNC
+    if (argv == NULL) {
+        bv_bcmd_(&cmd, &len, &size, COMPILER " -o beaver beaver.c", 0);
+    } else {
+        bv_bcmd_(&cmd, &len, &size, COMPILER " -o beaver beaver.c &&", 0);
+        for (; *argv; argv++) {
+            bv_bcmd_(&cmd, &len, &size, *argv, 1);
+        }
+    }
+#else  // BEAVER_AUTO_ASYNC is defined
+    if (argv == NULL) {
+        bv_bcmd_(&cmd, &len, &size,
+            COMPILER " -DBEAVER_ASYNC=1 -o beaver beaver.c " ASAW_LOCATION
+                     " -lpthread",
+            0);
+    } else {
+        bv_bcmd_(&cmd, &len, &size,
+            COMPILER " -DBEAVER_ASYNC=1 -o beaver beaver.c " ASAW_LOCATION
+                     " -lpthread &&",
+            0);
+        for (; *argv; argv++) {
+            bv_bcmd_(&cmd, &len, &size, *argv, 1);
+        }
+    }
+#endif // BEAVER_AUTO_ASYNC
+
+    call_or_panic(cmd);
+    free(cmd);
+    exit(0);
+}
+
 static inline void auto_update(char** argv)
 {
     if (!bv_should_recomp_("beaver", "beaver.c")) {
         return;
     }
-
-    char* cmd = NULL;
-    uint32_t len = 0;
-    uint32_t size = 0;
-
-    bv_bcmd_(&cmd, &len, &size, COMPILER " -o beaver beaver.c &&", 0);
-    for (; *argv; argv++) {
-        bv_bcmd_(&cmd, &len, &size, *argv, 1);
-    }
-
-    call_or_panic(cmd);
-    free(cmd);
-    exit(0);
+    bv_recompile_beaver_(argv);
 }
 
 static inline void rm(char* p)
@@ -276,6 +325,17 @@ static void bv_eflags_add_(char* flags)
             s++;
         }
     }
+}
+
+void* bv_async_call_(void* cmd)
+{
+    printf(GREEN "[running" BLUE ":async" GREEN "]" RESET " %s\n", (char*)cmd);
+    int r = system(cmd);
+    if (r != 0) {
+        fprintf(stderr, ORANGE "CBUILD WARN!: " RESET "%s\n", (char*)cmd);
+    }
+    free(cmd);
+    return NULL;
 }
 
 static inline void bv_compile_module_(char* name, char* flags)
@@ -359,9 +419,17 @@ static inline void bv_compile_module_(char* name, char* flags)
             bv_bcmd_(&cmd, &len, &size, flags, 1);
             bv_bcmd_(&cmd, &len, &size, mi->extra_flags, 1);
             bv_bcmd_(&cmd, &len, &size, mi->src, 1);
+
+#if BEAVER_ASYNC == 1
+            async_noawait(bv_async_call_, cmd);
+            cmd = NULL;
+            len = 0;
+            size = 0;
+#else
             call_or_panic(cmd);
             *cmd = 0;
             len = 0;
+#endif
         }
 
         bv_eflags_add_(mi->extra_flags);
@@ -377,13 +445,19 @@ static inline void compile(char** program, char* flags)
     bv_files_ = bv_set_create_(modules_len);
     bv_modules_ = bv_set_create_(modules_len);
 
-    // compile modules
+// compile modules asynchronisly
+#if BEAVER_ASYNC == 1
+    asaw_init(4);
+#endif
     {
         char** pi = NULL;
         for (pi = program; *pi; pi++) {
             bv_compile_module_(*pi, flags);
         }
     }
+#if BEAVER_ASYNC == 1
+    asaw_free();
+#endif
 
     // compile everything together
     {
