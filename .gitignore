@@ -1,6 +1,7 @@
 # specials
 beaver
 out
+Makefile
 
 # Prerequisites
 *.d

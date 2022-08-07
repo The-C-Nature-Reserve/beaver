@@ -6,7 +6,8 @@ module_t modules[] = {
     { .name = "example", .src = "example.c", .extra_flags = "-lm" },
     { .name = "example", .module = "m1" },
 
-    { .name = "m1", .src = "src/example.c", .extra_flags = "-lcurl" },
+    { .name = "m1", .src = "src/example.c", .extra_flags = "-lcurses -lcurl" },
+    { .name = "m1", .src = "src/ex2.c" },
 
 };
 uint32_t modules_len = sizeof(modules) / sizeof(*modules);
