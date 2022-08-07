@@ -1,6 +1,7 @@
 #ifndef BEAVER_H
 #define BEAVER_H
 
+#include <ctype.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -44,7 +45,7 @@
 #endif // COMPILER
 
 #ifndef BEAVER_EXTRA_FLAGS_BUFFER_SIZE
-#define BEAVER_EXTRA_FLAGS_BUFFER_SIZE 2048
+#define BEAVER_EXTRA_FLAGS_BUFFER_SIZE 16
 #endif
 
 // TODO are there other linkers ? how to detect them
@@ -66,10 +67,69 @@ struct module_t {
 extern module_t modules[];
 extern uint32_t modules_len;
 
-static char beaver_eflags_[BEAVER_EXTRA_FLAGS_BUFFER_SIZE] = { 0 };
-static uint32_t beaver_eflags_len_ = 0;
+// simple set -----------------------------------------------------------------
 
-static inline bool beaver_should_recomp_(char* file, char* dep)
+typedef struct bv_set_t_ bv_set_t_;
+struct bv_set_t_ {
+    char** set;
+    uint32_t size;
+    uint32_t used;
+};
+
+bv_set_t_* bv_set_create_(uint32_t size)
+{
+    bv_set_t_* s = malloc(sizeof(*s));
+    s->size = size << 2;
+    s->set = calloc(s->size, sizeof(*s->set));
+    s->used = 0;
+    return s;
+}
+
+void bv_set_free_(bv_set_t_* s)
+{
+    if (s == NULL) {
+        return;
+    }
+    free(s->set);
+    free(s);
+}
+
+uint32_t bv_set_pos_(bv_set_t_* s, char* k)
+{
+    uint32_t h = 8223;
+    {
+        char* iter = k;
+        for (; *iter; ++iter) {
+            h ^= *iter;
+        }
+    }
+    h %= s->size;
+    while (s->set[h] != NULL && strcmp(s->set[h], k) != 0) {
+        h = (h + 1) % s->size;
+    }
+    return h;
+}
+
+int bv_set_insert_(bv_set_t_* s, char* k)
+{
+    uint32_t p = bv_set_pos_(s, k);
+    s->used += s->set[p] == NULL;
+    if (s->used >= s->size) {
+        return -1;
+    }
+    s->set[p] = k;
+    return 0;
+}
+
+bool bv_set_contains_(bv_set_t_* s, char* k)
+{
+    uint32_t p = bv_set_pos_(s, k);
+    return s->set[p] != NULL;
+}
+
+// beaver helper --------------------------------------------------------------
+
+static inline bool bv_should_recomp_(char* file, char* dep)
 {
     if (access(file, F_OK) != 0) {
         return 1;
@@ -87,26 +147,7 @@ static inline bool beaver_should_recomp_(char* file, char* dep)
     return 0;
 }
 
-// eflags = extra_flags
-static inline void beaver_eflags_add_(char* flags)
-{
-    uint32_t len = strlen(flags) + 1;
-    if (beaver_eflags_len_ + len >= sizeof(beaver_eflags_)) {
-        char errmsg[] = "Error: extra flags buffer too small!\n"
-                        "to resolve this add\n"
-                        "'#define BEAVER_EXTRA_FLAGS_BUFFER_SIZE %lu'\n"
-                        "just before '#inlcude \"beaver.h\"'\n";
-        fprintf(stderr, errmsg, sizeof(beaver_eflags_) << 1);
-        exit(1);
-    }
-    beaver_eflags_[beaver_eflags_len_++] = ' ';
-    len--;
-    memcpy(beaver_eflags_ + beaver_eflags_len_, flags, len);
-    beaver_eflags_len_ += len;
-    beaver_eflags_[beaver_eflags_len_] = 0;
-}
-
-static inline int beaver_bcmd_(
+static inline int bv_bcmd_(
     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
 {
     if (*cmd == NULL) {
@@ -159,18 +200,18 @@ static inline void call_or_warn(char* cmd)
     }
 }
 
-static inline void beaver_check_build_dir_()
+static inline void bv_check_build_dir_()
 {
-    if (access(BEAVER_DIRECTORY "inter/", F_OK) == 0) {
+    if (access(BEAVER_DIRECTORY, F_OK) == 0) {
         return;
     }
 
-    call_or_warn("mkdir -p " BEAVER_DIRECTORY "inter/");
+    call_or_warn("mkdir -p " BEAVER_DIRECTORY);
 }
 
 static inline void auto_update(char** argv)
 {
-    if (!beaver_should_recomp_("beaver", "beaver.c")) {
+    if (!bv_should_recomp_("beaver", "beaver.c")) {
         return;
     }
 
@@ -178,9 +219,9 @@ static inline void auto_update(char** argv)
     uint32_t len = 0;
     uint32_t size = 0;
 
-    beaver_bcmd_(&cmd, &len, &size, COMPILER " -o beaver beaver.c &&", 0);
+    bv_bcmd_(&cmd, &len, &size, COMPILER " -o beaver beaver.c &&", 0);
     for (; *argv; argv++) {
-        beaver_bcmd_(&cmd, &len, &size, *argv, 1);
+        bv_bcmd_(&cmd, &len, &size, *argv, 1);
     }
 
     call_or_panic(cmd);
@@ -194,25 +235,13 @@ static inline void rm(char* p)
     uint32_t len = 0;
     uint32_t size = 0;
 
-    beaver_bcmd_(&cmd, &len, &size, "rm", 0);
-    beaver_bcmd_(&cmd, &len, &size, p, 1);
+    bv_bcmd_(&cmd, &len, &size, "rm", 0);
+    bv_bcmd_(&cmd, &len, &size, p, 1);
     call_or_warn(cmd);
     free(cmd);
 }
 
-static inline void beaver_clean_dir_(char* p)
-{
-    char* cmd = NULL;
-    uint32_t cmd_len = 0;
-    uint32_t cmd_size = 0;
-    beaver_bcmd_(&cmd, &cmd_len, &cmd_size, "rm", 0);
-    beaver_bcmd_(&cmd, &cmd_len, &cmd_size, p, 1);
-    beaver_bcmd_(&cmd, &cmd_len, &cmd_size, "*", 0);
-    call_or_panic(cmd);
-    free(cmd);
-}
-
-static inline char* beaver_file_from_path_(char* p)
+static inline char* bv_file_from_path_(char* p)
 {
     char* src = rindex(p, '/');
     if (src == NULL) {
@@ -222,112 +251,171 @@ static inline char* beaver_file_from_path_(char* p)
     }
 }
 
-static inline void beaver_compile_module_(char* name, char* flags)
+static bv_set_t_* bv_eflags_ = NULL;
+static bv_set_t_* bv_files_ = NULL;
+static bv_set_t_* bv_modules_ = NULL;
+
+static void bv_eflags_add_(char* flags)
 {
-    // TODO: enable true module dependency currently a bit hacked
-    // check if recompile needed
-    module_t* mi;
-    {
-        bool recomp_needed = 0;
-        char mod_name[strlen(name) + strlen(BEAVER_DIRECTORY) + 3];
-        strcpy(mod_name, BEAVER_DIRECTORY);
-        strcat(mod_name, name);
-        strcat(mod_name, ".o");
-        for (mi = modules; mi != modules + modules_len; ++mi) {
-            if (strcmp(mi->name, name) != 0) {
-                continue;
-            }
-            if (*mi->module != 0) {
-                beaver_compile_module_(mi->module, flags);
-                continue;
-            }
-            beaver_eflags_add_(mi->extra_flags);
-            if (!recomp_needed && beaver_should_recomp_(mod_name, mi->src)) {
-                recomp_needed = 1;
-            }
+    char* s = flags;
+    char* start = NULL;
+
+    while (*s) {
+        while (isspace(*s)) {
+            s++;
         }
-        if (!recomp_needed) {
-            return;
+        start = s;
+        while (*s && !isspace(*s)) {
+            s++;
+        }
+        if (start != s) {
+            *s = 0;
+            bv_set_insert_(bv_eflags_, start);
+            s++;
         }
     }
-
-    char* cmd = NULL;
-    uint32_t cmd_len = 0;
-    uint32_t cmd_size = 0;
-    for (mi = modules; mi != modules + modules_len; ++mi) {
-        if (strcmp(mi->name, name) != 0) {
-            continue;
-        }
-        if (*mi->module != 0) {
-            continue;
-        }
-        beaver_bcmd_(&cmd, &cmd_len, &cmd_size, COMPILER " -c -o", 0);
-        beaver_bcmd_(&cmd, &cmd_len, &cmd_size, BEAVER_DIRECTORY "inter/", 1);
-
-        beaver_bcmd_(
-            &cmd, &cmd_len, &cmd_size, beaver_file_from_path_(mi->src), 0);
-
-        beaver_bcmd_(&cmd, &cmd_len, &cmd_size, ".o", 0);
-        if (*mi->special_flags == 0) {
-            beaver_bcmd_(&cmd, &cmd_len, &cmd_size, flags, 1);
-        } else {
-            beaver_bcmd_(&cmd, &cmd_len, &cmd_size, mi->special_flags, 1);
-        }
-        beaver_bcmd_(&cmd, &cmd_len, &cmd_size, mi->extra_flags, 1);
-        beaver_bcmd_(&cmd, &cmd_len, &cmd_size, mi->src, 1);
-        call_or_panic(cmd);
-
-        // reset cmd
-        {
-            *cmd = 0;
-            cmd_len = 0;
-        }
-    }
-
-    beaver_bcmd_(&cmd, &cmd_len, &cmd_size, LINKER " -relocatable -o", 0);
-    beaver_bcmd_(&cmd, &cmd_len, &cmd_size, BEAVER_DIRECTORY, 1);
-    beaver_bcmd_(&cmd, &cmd_len, &cmd_size, name, 0);
-    beaver_bcmd_(&cmd, &cmd_len, &cmd_size, ".o", 0);
-    for (mi = modules; mi != modules + modules_len; ++mi) {
-        if (strcmp(mi->name, name) != 0) {
-            continue;
-        }
-        if (*mi->module != 0) {
-            continue;
-        }
-        beaver_bcmd_(&cmd, &cmd_len, &cmd_size, BEAVER_DIRECTORY "inter/", 1);
-        // beaver_bcmd_(&cmd, &cmd_len, &cmd_size, mi->src, 0);
-        beaver_bcmd_(
-            &cmd, &cmd_len, &cmd_size, beaver_file_from_path_(mi->src), 0);
-        beaver_bcmd_(&cmd, &cmd_len, &cmd_size, ".o", 0);
-    }
-    call_or_panic(cmd);
-    free(cmd);
-    beaver_clean_dir_(BEAVER_DIRECTORY "inter/");
 }
 
-static inline void compile(char** prog, char* flags)
+static inline void bv_compile_module_(char* name, char* flags)
 {
-    beaver_check_build_dir_();
+    // module already compiled
+    if (bv_set_contains_(bv_modules_, name)) {
+        return;
+    }
+    bv_set_insert_(bv_modules_, name);
+
     char* cmd = NULL;
     uint32_t len = 0;
     uint32_t size = 0;
 
-    char** pi;
-    for (pi = prog; *pi; ++pi) {
-        beaver_compile_module_(*pi, flags);
+    module_t* mi = NULL;
+    for (mi = modules; mi != modules + modules_len; mi++) {
+        if (strcmp(mi->name, name) != 0) {
+            continue;
+        }
+
+        if (*mi->module != 0) {
+            bv_compile_module_(mi->module, flags);
+            continue;
+        }
+
+        if (bv_set_contains_(bv_files_, mi->src)) {
+            continue;
+        }
+
+        bv_set_insert_(bv_files_, mi->src);
+        bv_eflags_add_(mi->extra_flags);
+
+        bool should_recomp = 0;
+
+        // check if directory exists
+        {
+            bv_bcmd_(&cmd, &len, &size, BEAVER_DIRECTORY, 0);
+            bv_bcmd_(&cmd, &len, &size, mi->src, 0);
+            bv_bcmd_(&cmd, &len, &size, ".o", 0);
+            if (access(cmd, F_OK) != 0) {
+                *cmd = 0;
+                len = 0;
+                char* d = rindex(mi->src, '/');
+                if (d != NULL && *d) {
+                    *d = 0;
+                    bv_bcmd_(
+                        &cmd, &len, &size, "mkdir -p " BEAVER_DIRECTORY, 0);
+                    bv_bcmd_(&cmd, &len, &size, mi->src, 0);
+                    call_or_warn(cmd);
+                    *d = '/';
+                    should_recomp = 1;
+                }
+            }
+            *cmd = 0;
+            len = 0;
+        }
+
+        // check if file was altered
+        {
+            bv_bcmd_(&cmd, &len, &size, BEAVER_DIRECTORY, 0);
+            bv_bcmd_(&cmd, &len, &size, mi->src, 0);
+            bv_bcmd_(&cmd, &len, &size, ".o", 0);
+            struct stat t = { 0 };
+            struct stat s = { 0 };
+
+            int err_0 = stat(cmd, &t);
+            int err_1 = stat(mi->src, &s);
+            if (err_0 != 0 || err_1 != 0) {
+                should_recomp = 1;
+            } else if (s.st_mtime >= t.st_mtime) {
+                should_recomp = 1;
+            }
+            *cmd = 0;
+            len = 0;
+        }
+
+        if (should_recomp) {
+            bv_bcmd_(&cmd, &len, &size, COMPILER " -c -o " BEAVER_DIRECTORY, 0);
+            bv_bcmd_(&cmd, &len, &size, mi->src, 0);
+            bv_bcmd_(&cmd, &len, &size, ".o", 0);
+            bv_bcmd_(&cmd, &len, &size, flags, 1);
+            bv_bcmd_(&cmd, &len, &size, mi->extra_flags, 1);
+            bv_bcmd_(&cmd, &len, &size, mi->src, 1);
+            call_or_panic(cmd);
+        }
+    }
+    free(cmd);
+}
+
+static inline void compile(char** program, char* flags)
+{
+
+    bv_check_build_dir_();
+    bv_eflags_ = bv_set_create_(BEAVER_EXTRA_FLAGS_BUFFER_SIZE);
+    bv_files_ = bv_set_create_(modules_len);
+    bv_modules_ = bv_set_create_(modules_len);
+
+    // compile modules
+    {
+        char** pi = NULL;
+        for (pi = program; *pi; pi++) {
+            bv_compile_module_(*pi, flags);
+        }
     }
 
-    beaver_bcmd_(&cmd, &len, &size, COMPILER " -o out", 0);
-    beaver_bcmd_(&cmd, &len, &size, flags, 1);
-    beaver_bcmd_(&cmd, &len, &size, beaver_eflags_, 1);
-    for (pi = prog; *pi; ++pi) {
-        beaver_bcmd_(&cmd, &len, &size, BEAVER_DIRECTORY, 1);
-        beaver_bcmd_(&cmd, &len, &size, *pi, 0);
-        beaver_bcmd_(&cmd, &len, &size, ".o", 0);
+    // compile everything together
+    {
+        char* cmd = NULL;
+        uint32_t len = 0;
+        uint32_t size = 0;
+        bv_bcmd_(&cmd, &len, &size, COMPILER " -o out", 0);
+        bv_bcmd_(&cmd, &len, &size, flags, 1);
+
+        char** mi = NULL;
+
+        // extra flags
+        for (mi = bv_eflags_->set; mi != bv_eflags_->set + bv_eflags_->size;
+             ++mi) {
+            if (*mi == NULL) {
+                continue;
+            }
+            bv_bcmd_(&cmd, &len, &size, *mi, 1);
+        }
+
+        // sources
+        for (mi = bv_files_->set; mi != bv_files_->set + bv_files_->size;
+             ++mi) {
+            if (*mi == NULL) {
+                continue;
+            }
+            bv_bcmd_(&cmd, &len, &size, BEAVER_DIRECTORY, 1);
+            bv_bcmd_(&cmd, &len, &size, *mi, 0);
+            bv_bcmd_(&cmd, &len, &size, ".o", 0);
+        }
+
+        call_or_panic(cmd);
+        free(cmd);
     }
-    call_or_panic(cmd);
-    free(cmd);
+
+    bv_set_free_(bv_files_);
+    bv_set_free_(bv_eflags_);
+    bv_set_free_(bv_modules_);
 }
 
 #endif
