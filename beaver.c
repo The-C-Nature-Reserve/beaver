@@ -1,5 +1,4 @@
-#define BEAVER_ALWAYS_SYNC
-
+#define BEAVER_AUTO_ASYNC
 #include "beaver.h"
 
 #define FLAGS "-g -Wall -Werror -Og"

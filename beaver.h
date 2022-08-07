@@ -2,24 +2,24 @@
 #define BEAVER_H
 
 #ifdef _WIN32
-#define BEAVER_ALWAYS_SYNC
+#undef BEAVER_AUTO_ASYNC
 #endif
 
 #ifdef _WIN64
-#define BEAVER_ALWAYS_SYNC
+#undef BEAVER_AUTO_ASYNC
 #endif
 
-#ifndef BEAVER_ALWAYS_SYNC
+#ifdef BEAVER_AUTO_ASYNC
 
 #ifndef BEAVER_ASYNC
 #define BEAVER_ASYNC 0
 #endif // BEAVER_ASYNC
 
-#ifndef ASAW_LOCATATION
-#define ASAW_LOCATATION "asaw.c"
-#endif
+#ifndef ASAW_LOCATION
+#define ASAW_LOCATION "asaw.c"
+#endif // ASAW_LOCATION
 
-#endif // BEAVER_ALWAYS_SYNC
+#endif //BEAVER_AUTO_ASYNC
 
 #include <ctype.h>
 #include <stdbool.h>
@@ -241,7 +241,7 @@ static inline void bv_recompile_beaver_(char** argv)
     uint32_t len = 0;
     uint32_t size = 0;
 
-#ifdef BEAVER_ALWAYS_SYNC
+#ifndef BEAVER_AUTO_ASYNC
     if (argv == NULL) {
         bv_bcmd_(&cmd, &len, &size, COMPILER " -o beaver beaver.c", 0);
     } else {
@@ -250,11 +250,11 @@ static inline void bv_recompile_beaver_(char** argv)
             bv_bcmd_(&cmd, &len, &size, *argv, 1);
         }
     }
-#else  // beaver async
+#else  // BEAVER_AUTO_ASYNC is defined
     if (argv == NULL) {
         bv_bcmd_(&cmd, &len, &size,
             COMPILER " -DBEAVER_ASYNC=1 -o beaver beaver.c " ASAW_LOCATION
-                     "-lpthread",
+                     " -lpthread",
             0);
     } else {
         bv_bcmd_(&cmd, &len, &size,
@@ -265,7 +265,7 @@ static inline void bv_recompile_beaver_(char** argv)
             bv_bcmd_(&cmd, &len, &size, *argv, 1);
         }
     }
-#endif // BEAVER_ALWAYS_SYNC
+#endif // BEAVER_AUTO_ASYNC
 
     call_or_panic(cmd);
     free(cmd);
