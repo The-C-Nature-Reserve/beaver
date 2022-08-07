@@ -100,7 +100,7 @@ struct bv_set_t_ {
     uint32_t used;
 };
 
-bv_set_t_* bv_set_create_(uint32_t size)
+static inline bv_set_t_* bv_set_create_(uint32_t size)
 {
     bv_set_t_* s = malloc(sizeof(*s));
     s->size = size << 2;
@@ -109,7 +109,7 @@ bv_set_t_* bv_set_create_(uint32_t size)
     return s;
 }
 
-void bv_set_free_(bv_set_t_* s)
+static inline void bv_set_free_(bv_set_t_* s)
 {
     if (s == NULL) {
         return;
@@ -118,7 +118,7 @@ void bv_set_free_(bv_set_t_* s)
     free(s);
 }
 
-uint32_t bv_set_pos_(bv_set_t_* s, char* k)
+static inline uint32_t bv_set_pos_(bv_set_t_* s, char* k)
 {
     uint32_t h = 8223;
     {
@@ -134,7 +134,7 @@ uint32_t bv_set_pos_(bv_set_t_* s, char* k)
     return h;
 }
 
-int bv_set_insert_(bv_set_t_* s, char* k)
+static inline int bv_set_insert_(bv_set_t_* s, char* k)
 {
     uint32_t p = bv_set_pos_(s, k);
     s->used += s->set[p] == NULL;
@@ -145,7 +145,7 @@ int bv_set_insert_(bv_set_t_* s, char* k)
     return 0;
 }
 
-bool bv_set_contains_(bv_set_t_* s, char* k)
+static inline bool bv_set_contains_(bv_set_t_* s, char* k)
 {
     uint32_t p = bv_set_pos_(s, k);
     return s->set[p] != NULL;
@@ -327,7 +327,7 @@ static void bv_eflags_add_(char* flags)
     }
 }
 
-void* bv_async_call_(void* cmd)
+static void* bv_async_call_(void* cmd)
 {
     printf(GREEN "[running" BLUE ":async" GREEN "]" RESET " %s\n", (char*)cmd);
     int r = system(cmd);
