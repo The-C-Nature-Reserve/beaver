@@ -1,26 +1,6 @@
 #ifndef BEAVER_H
 #define BEAVER_H
 
-#ifdef _WIN32
-#undef BEAVER_AUTO_ASYNC
-#endif
-
-#ifdef _WIN64
-#undef BEAVER_AUTO_ASYNC
-#endif
-
-#ifdef BEAVER_AUTO_ASYNC
-
-#ifndef BEAVER_ASYNC
-#define BEAVER_ASYNC 0
-#endif // BEAVER_ASYNC
-
-#ifndef ASAW_LOCATION
-#define ASAW_LOCATION "asaw.c"
-#endif // ASAW_LOCATION
-
-#endif //BEAVER_AUTO_ASYNC
-
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -29,14 +9,8 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#if BEAVER_ASYNC == 1
-
-#include "asaw.h"
-#include <pthread.h>
-
-#endif
-
 // TODO: windows
+#include <sys/wait.h>
 #include <unistd.h>
 
 #define GREEN "\033[32m"
@@ -241,7 +215,6 @@ static inline void bv_recompile_beaver_(char** argv)
     uint32_t len = 0;
     uint32_t size = 0;
 
-#ifndef BEAVER_AUTO_ASYNC
     if (argv == NULL) {
         bv_bcmd_(&cmd, &len, &size, COMPILER " -o beaver beaver.c", 0);
     } else {
@@ -250,22 +223,6 @@ static inline void bv_recompile_beaver_(char** argv)
             bv_bcmd_(&cmd, &len, &size, *argv, 1);
         }
     }
-#else  // BEAVER_AUTO_ASYNC is defined
-    if (argv == NULL) {
-        bv_bcmd_(&cmd, &len, &size,
-            COMPILER " -DBEAVER_ASYNC=1 -o beaver beaver.c " ASAW_LOCATION
-                     " -lpthread",
-            0);
-    } else {
-        bv_bcmd_(&cmd, &len, &size,
-            COMPILER " -DBEAVER_ASYNC=1 -o beaver beaver.c " ASAW_LOCATION
-                     " -lpthread &&",
-            0);
-        for (; *argv; argv++) {
-            bv_bcmd_(&cmd, &len, &size, *argv, 1);
-        }
-    }
-#endif // BEAVER_AUTO_ASYNC
 
     call_or_panic(cmd);
     free(cmd);
@@ -327,15 +284,38 @@ static void bv_eflags_add_(char* flags)
     }
 }
 
-static void* bv_async_call_(void* cmd)
+static void bv_async_call_(void* cmd)
 {
-    printf(GREEN "[running" BLUE ":async" GREEN "]" RESET " %s\n", (char*)cmd);
-    int r = system(cmd);
-    if (r != 0) {
-        fprintf(stderr, ORANGE "CBUILD WARN!: " RESET "%s\n", (char*)cmd);
+
+#ifdef _WIN32
+    call_or_warn(cmd);
+    free(cmd);
+#else
+    if (fork() == 0) {
+        printf(
+            GREEN "[running" BLUE ":async" GREEN "]" RESET " %s\n", (char*)cmd);
+        int r = system(cmd);
+        if (r != 0) {
+            fprintf(stderr, ORANGE "CBUILD WARN!: " RESET "%s\n", (char*)cmd);
+        }
+        free(cmd);
+        bv_set_free_(bv_files_);
+        bv_set_free_(bv_eflags_);
+        bv_set_free_(bv_modules_);
+        _exit(0);
     }
     free(cmd);
-    return NULL;
+
+#endif
+}
+
+static inline void bv_async_wait_()
+{
+#ifdef _WIN32
+#else
+    while (wait(NULL) > 0)
+        ;
+#endif
 }
 
 static inline void bv_compile_module_(char* name, char* flags)
@@ -420,16 +400,10 @@ static inline void bv_compile_module_(char* name, char* flags)
             bv_bcmd_(&cmd, &len, &size, mi->extra_flags, 1);
             bv_bcmd_(&cmd, &len, &size, mi->src, 1);
 
-#if BEAVER_ASYNC == 1
-            async_noawait(bv_async_call_, cmd);
+            bv_async_call_(cmd);
             cmd = NULL;
             len = 0;
             size = 0;
-#else
-            call_or_panic(cmd);
-            *cmd = 0;
-            len = 0;
-#endif
         }
 
         bv_eflags_add_(mi->extra_flags);
@@ -445,19 +419,14 @@ static inline void compile(char** program, char* flags)
     bv_files_ = bv_set_create_(modules_len);
     bv_modules_ = bv_set_create_(modules_len);
 
-// compile modules asynchronisly
-#if BEAVER_ASYNC == 1
-    asaw_init(4);
-#endif
+    // compile modules
     {
         char** pi = NULL;
         for (pi = program; *pi; pi++) {
             bv_compile_module_(*pi, flags);
         }
     }
-#if BEAVER_ASYNC == 1
-    asaw_free();
-#endif
+    bv_async_wait_();
 
     // compile everything together
     {
