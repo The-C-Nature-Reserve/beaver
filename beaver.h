@@ -13,6 +13,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#ifndef BEAVER_MAX_PROC
+#define BEAVER_MAX_PROC 8
+#endif
+
 #define GREEN "\033[32m"
 #define RED "\033[31m"
 #define ORANGE "\033[93m"
@@ -291,6 +295,12 @@ static void bv_async_call_(void* cmd)
     call_or_warn(cmd);
     free(cmd);
 #else
+    static uint32_t len = 0;
+    if (len == BEAVER_MAX_PROC) {
+        wait(NULL);
+    } else {
+        len++;
+    }
     if (fork() == 0) {
         printf(
             GREEN "[running" BLUE ":async" GREEN "]" RESET " %s\n", (char*)cmd);
