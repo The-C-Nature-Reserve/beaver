@@ -49,6 +49,11 @@
 
 #endif // COMPILER
 
+// TODO other platforms
+#ifndef LINKER
+#define LINKER "ld"
+#endif // LINKER
+
 #ifndef BEAVER_EXTRA_FLAGS_BUFFER_SIZE
 #define BEAVER_EXTRA_FLAGS_BUFFER_SIZE 16
 #endif
@@ -456,6 +461,52 @@ static inline void compile(char** program, char* flags)
             }
             bv_bcmd_(&cmd, &len, &size, *mi, 1);
         }
+
+        // sources
+        for (mi = bv_files_->set; mi != bv_files_->set + bv_files_->size;
+             ++mi) {
+            if (*mi == NULL) {
+                continue;
+            }
+            bv_bcmd_(&cmd, &len, &size, BEAVER_DIRECTORY, 1);
+            bv_bcmd_(&cmd, &len, &size, *mi, 0);
+            bv_bcmd_(&cmd, &len, &size, ".o", 0);
+        }
+
+        call_or_panic(cmd);
+        free(cmd);
+    }
+
+    bv_set_free_(bv_files_);
+    bv_set_free_(bv_eflags_);
+    bv_set_free_(bv_modules_);
+}
+
+static inline void compile_to_object(char** program, char* name, char* flags)
+{
+
+    bv_check_build_dir_();
+    bv_eflags_ = bv_set_create_(BEAVER_EXTRA_FLAGS_BUFFER_SIZE);
+    bv_files_ = bv_set_create_(modules_len);
+    bv_modules_ = bv_set_create_(modules_len);
+
+    // compile modules
+    {
+        char** pi = NULL;
+        for (pi = program; *pi; pi++) {
+            bv_compile_module_(*pi, flags);
+        }
+    }
+    bv_async_wait_();
+
+    // link everything together
+    {
+        char* cmd = NULL;
+        uint32_t len = 0;
+        uint32_t size = 0;
+        bv_bcmd_(&cmd, &len, &size, LINKER " -r -o", 0);
+        bv_bcmd_(&cmd, &len, &size, name, 1);
+        char** mi = NULL;
 
         // sources
         for (mi = bv_files_->set; mi != bv_files_->set + bv_files_->size;
