@@ -8,12 +8,11 @@ module_t modules[] = {
 
 uint32_t modules_len = sizeof(modules) / sizeof(*modules);
 
-char* test[] = { "example", NULL };
-
 char* program[] = { "example", NULL };
 
 int main(int argc, char** argv)
 {
+    printf("Hello World!\n");
     auto_update(argv);
 
     if (argc == 1) {

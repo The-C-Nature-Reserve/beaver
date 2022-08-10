@@ -1,6 +1,19 @@
 #ifndef BEAVER_H
 #define BEAVER_H
 
+#ifdef ALWAYS_SYNC
+
+#undef BV_REBUILD_ASYNC_
+#undef BV_ASYNC_
+
+#else
+
+#ifndef BV_ASYNC_
+#define BV_REBUILD_ASYNC_
+#endif
+
+#endif // ALWAYS_SYNC
+
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -73,6 +86,106 @@ struct module_t {
 
 extern module_t modules[];
 extern uint32_t modules_len;
+
+// simple thread pool ---------------------------------------------------------
+
+#ifdef BV_ASYNC_
+#include <pthread.h>
+
+#ifndef NUM_THREADS
+#define NUM_THREADS 8
+#endif
+
+typedef struct bv_task_t_ bv_task_t_;
+struct bv_task_t_ {
+    void (*fn)(void*);
+    void* arg;
+    bv_task_t_* next;
+};
+
+typedef struct bv_pool_t_ bv_pool_t_;
+struct bv_pool_t_ {
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    pthread_t threads[NUM_THREADS];
+    bv_task_t_* stack;
+    bool alive;
+};
+
+static void* bv_work_(void* a)
+{
+    bv_pool_t_* p = a;
+    bool alive = 1;
+    bv_task_t_* t = NULL;
+    while (t != NULL || alive) {
+        pthread_mutex_lock(&p->mutex);
+        while (p->alive && p->stack == NULL) {
+            pthread_cond_wait(&p->cond, &p->mutex);
+        }
+        t = p->stack;
+        if (p->stack) {
+            p->stack = p->stack->next;
+        }
+        alive = p->alive;
+        pthread_mutex_unlock(&p->mutex);
+
+        if (t) {
+            t->fn(t->arg);
+            free(t);
+        }
+    }
+    return NULL;
+}
+
+bv_pool_t_* bv_pool_create_()
+{
+    bv_pool_t_* p = malloc(sizeof(*p));
+    *p = (bv_pool_t_) {
+        .mutex = PTHREAD_MUTEX_INITIALIZER,
+        .cond = PTHREAD_COND_INITIALIZER,
+        .alive = 1,
+        .stack = NULL,
+    };
+
+    pthread_t* t;
+    for (t = p->threads; t != p->threads + NUM_THREADS; ++t) {
+        pthread_create(t, NULL, bv_work_, p);
+    }
+    return p;
+}
+
+void bv_pool_free_(bv_pool_t_* p)
+{
+    if (p == NULL) {
+        return;
+    }
+
+    pthread_mutex_lock(&p->mutex);
+    p->alive = 0;
+    pthread_mutex_unlock(&p->mutex);
+    pthread_cond_broadcast(&p->cond);
+
+    pthread_t* t;
+    for (t = p->threads; t != p->threads + NUM_THREADS; ++t) {
+        pthread_join(*t, NULL);
+    }
+    free(p);
+}
+
+void bv_pool_add_(bv_pool_t_* p, void (*fn)(void*), void* arg)
+{
+    bv_task_t_* t = malloc(sizeof(*t));
+    t->fn = fn;
+    t->arg = arg;
+
+    pthread_mutex_lock(&p->mutex);
+    t->next = p->stack;
+    p->stack = t;
+    pthread_mutex_unlock(&p->mutex);
+    pthread_cond_signal(&p->cond);
+}
+
+#endif
 
 // simple set -----------------------------------------------------------------
 
@@ -224,10 +337,10 @@ static inline void bv_recompile_beaver_(char** argv)
     uint32_t len = 0;
     uint32_t size = 0;
 
-    if (argv == NULL) {
-        bv_bcmd_(&cmd, &len, &size, COMPILER " -o beaver beaver.c", 0);
-    } else {
-        bv_bcmd_(&cmd, &len, &size, COMPILER " -o beaver beaver.c &&", 0);
+    bv_bcmd_(&cmd, &len, &size,
+        COMPILER " -lpthread -DBV_ASYNC_ -o beaver beaver.c", 0);
+    if (argv != NULL) {
+        bv_bcmd_(&cmd, &len, &size, "&&", 1);
         for (; *argv; argv++) {
             bv_bcmd_(&cmd, &len, &size, *argv, 1);
         }
@@ -240,6 +353,11 @@ static inline void bv_recompile_beaver_(char** argv)
 
 static inline void auto_update(char** argv)
 {
+
+#ifdef BV_REBUILD_ASYNC_
+    bv_recompile_beaver_(argv);
+#endif
+
     if (!bv_should_recomp_("beaver", "beaver.c")) {
         return;
     }
@@ -293,45 +411,21 @@ static void bv_eflags_add_(char* flags)
     }
 }
 
+#ifdef BV_ASYNC_
+
 static void bv_async_call_(void* cmd)
 {
-
-#ifdef _WIN32
-    call_or_warn(cmd);
-    free(cmd);
-#else
-    static uint32_t len = 0;
-    if (len == BEAVER_MAX_PROC) {
-        wait(NULL);
-    } else {
-        len++;
-    }
-    if (fork() == 0) {
-        printf(
-            GREEN "[running" BLUE ":async" GREEN "]" RESET " %s\n", (char*)cmd);
-        int r = system(cmd);
-        if (r != 0) {
-            fprintf(stderr, ORANGE "CBUILD WARN!: " RESET "%s\n", (char*)cmd);
-        }
-        free(cmd);
-        bv_set_free_(bv_files_);
-        bv_set_free_(bv_eflags_);
-        bv_set_free_(bv_modules_);
-        _exit(0);
+    printf(GREEN "[running" BLUE ":async" GREEN "]" RESET " %s\n", (char*)cmd);
+    int r = system(cmd);
+    if (r != 0) {
+        fprintf(stderr, ORANGE "CBUILD WARN!: " RESET "%s\n", (char*)cmd);
     }
     free(cmd);
-
-#endif
 }
 
-static inline void bv_async_wait_()
-{
-#ifdef _WIN32
-#else
-    while (wait(NULL) > 0)
-        ;
+static bv_pool_t_* bv_pool_ = NULL;
+
 #endif
-}
 
 static inline void bv_compile_module_(char* name, char* flags)
 {
@@ -415,10 +509,16 @@ static inline void bv_compile_module_(char* name, char* flags)
             bv_bcmd_(&cmd, &len, &size, mi->extra_flags, 1);
             bv_bcmd_(&cmd, &len, &size, mi->src, 1);
 
-            bv_async_call_(cmd);
+#ifdef BV_ASYNC_
+            bv_pool_add_(bv_pool_, (void (*)(void*))bv_async_call_, cmd);
             cmd = NULL;
             len = 0;
             size = 0;
+#else
+            call_or_panic(cmd);
+            *cmd = 0;
+            len = 0;
+#endif
         }
 
         bv_eflags_add_(mi->extra_flags);
@@ -428,7 +528,6 @@ static inline void bv_compile_module_(char* name, char* flags)
 
 static inline void compile(char** program, char* flags)
 {
-
     bv_check_build_dir_();
     bv_eflags_ = bv_set_create_(BEAVER_EXTRA_FLAGS_BUFFER_SIZE);
     bv_files_ = bv_set_create_(modules_len);
@@ -436,12 +535,17 @@ static inline void compile(char** program, char* flags)
 
     // compile modules
     {
+#ifdef BV_ASYNC_
+        bv_pool_ = bv_pool_create_();
+#endif
         char** pi = NULL;
         for (pi = program; *pi; pi++) {
             bv_compile_module_(*pi, flags);
         }
+#ifdef BV_ASYNC_
+        bv_pool_free_(bv_pool_);
+#endif
     }
-    bv_async_wait_();
 
     // compile everything together
     {
@@ -492,12 +596,17 @@ static inline void compile_to_object(char** program, char* name, char* flags)
 
     // compile modules
     {
+#ifdef BV_ASYNC_
+        bv_pool_ = bv_pool_create_();
+#endif
         char** pi = NULL;
         for (pi = program; *pi; pi++) {
             bv_compile_module_(*pi, flags);
         }
+#ifdef BV_ASYNC_
+        bv_pool_free_(bv_pool_);
+#endif
     }
-    bv_async_wait_();
 
     // link everything together
     {
@@ -522,7 +631,6 @@ static inline void compile_to_object(char** program, char* name, char* flags)
         call_or_panic(cmd);
         free(cmd);
     }
-
     bv_set_free_(bv_files_);
     bv_set_free_(bv_eflags_);
     bv_set_free_(bv_modules_);
