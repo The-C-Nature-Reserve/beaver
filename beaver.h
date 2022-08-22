@@ -22,9 +22,12 @@
 #include <string.h>
 #include <sys/stat.h>
 
-// TODO: windows
+#ifdef _WIN32
+    #include <Windows.h>
+#else
 #include <sys/wait.h>
 #include <unistd.h>
+#endif
 
 #ifndef BEAVER_MAX_PROC
 #define BEAVER_MAX_PROC 8
@@ -86,6 +89,17 @@ struct module_t {
 
 extern module_t modules[];
 extern uint32_t modules_len;
+
+// windows implementations ----------------------------------------------------
+
+#define F_OK NULL
+
+BOOL access(LPCTSTR path, void* _)
+{
+    DWORD attrib = GetFileAttributes(path);
+    return (attrib != INVALID_FILE_ATTRIBUTES &&
+            !(attrib & FILE_ATTRIBUTE_DIRECTORY));
+}
 
 // simple thread pool ---------------------------------------------------------
 
@@ -378,7 +392,7 @@ static inline void rm(char* p)
 
 static inline char* bv_file_from_path_(char* p)
 {
-    char* src = rindex(p, '/');
+    char* src = strchr(p, '/');
     if (src == NULL) {
         return p;
     } else {
