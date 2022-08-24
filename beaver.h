@@ -22,9 +22,13 @@
 #include <string.h>
 #include <sys/stat.h>
 
-// TODO: windows
+#ifdef _WIN32
+#include <io.h>
+#define access _access
+#else
 #include <sys/wait.h>
 #include <unistd.h>
+#endif
 
 #ifndef BEAVER_MAX_PROC
 #define BEAVER_MAX_PROC 8
