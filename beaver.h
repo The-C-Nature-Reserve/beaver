@@ -1,16 +1,16 @@
 #ifndef BEAVER_H
 #define BEAVER_H
 
+#ifndef BV_ASYNC_
+#define BV_REBUILD_ASYNC_
+#endif
+
 #ifdef ALWAYS_SYNC
 
 #undef BV_REBUILD_ASYNC_
 #undef BV_ASYNC_
 
 #else
-
-#ifndef BV_ASYNC_
-#define BV_REBUILD_ASYNC_
-#endif
 
 #endif // ALWAYS_SYNC
 
@@ -337,8 +337,12 @@ static inline void bv_recompile_beaver_(char** argv)
     uint32_t len = 0;
     uint32_t size = 0;
 
+#ifndef ALWAYS_SYNC
     bv_bcmd_(&cmd, &len, &size,
         COMPILER " -lpthread -DBV_ASYNC_ -o beaver beaver.c", 0);
+#else
+    bv_bcmd_(&cmd, &len, &size, COMPILER " -o beaver beaver.c", 0);
+#endif
     if (argv != NULL) {
         bv_bcmd_(&cmd, &len, &size, "&&", 1);
         for (; *argv; argv++) {
