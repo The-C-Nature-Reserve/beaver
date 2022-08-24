@@ -12,7 +12,6 @@ char* program[] = { "example", NULL };
 
 int main(int argc, char** argv)
 {
-    printf("Hello World!\n");
     auto_update(argv);
 
     if (argc == 1) {
@@ -21,7 +20,8 @@ int main(int argc, char** argv)
     } else if (strcmp(argv[1], "recompile") == 0) {
         recompile();
     } else if (strcmp(argv[1], "clean") == 0) {
-        rm("build/*");
+        // not on windows 
+        rm("$(find build/ -type f)");
         rm("out");
     }
     return 0;
