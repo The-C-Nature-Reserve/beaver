@@ -594,6 +594,17 @@ static inline void compile(char** program, char* flags)
     bv_set_free_(bv_modules_);
 }
 
+static inline void prepare_all()
+{
+#ifdef BV_ASYNC_
+    bv_pool_ = bv_pool_create_();
+#endif
+    // TODO 
+#ifdef BV_ASYNC_
+    bv_pool_free_(bv_pool_);
+#endif
+}
+
 static inline void compile_to_object(char** program, char* name, char* flags)
 {
 
