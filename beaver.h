@@ -435,60 +435,34 @@ static bv_pool_t_* bv_pool_ = NULL;
 
 #endif
 
-static inline void bv_compile_module_(char* name, char* flags)
+static inline void bv_compile_file_(module_t* mi, char* flags)
 {
-    // module already compiled
-    if (bv_set_contains_(bv_modules_, name)) {
-        return;
-    }
-    bv_set_insert_(bv_modules_, name);
-
     char* cmd = NULL;
     uint32_t len = 0;
     uint32_t size = 0;
+    bool should_recomp = 0;
+    //  TODO: windows
+    // check if directory exists
+    {
+        bv_bcmd_(&cmd, &len, &size, BEAVER_DIRECTORY, 0);
+        bv_bcmd_(&cmd, &len, &size, mi->src, 0);
 
-    module_t* mi = NULL;
-    for (mi = modules; mi != modules + modules_len; mi++) {
-        if (strcmp(mi->name, name) != 0) {
-            continue;
-        }
+        // beaver directory gurantees one /
+        char* d = rindex(cmd, '/');
+        *d = 0;
 
-        if (*mi->module != 0) {
-            bv_compile_module_(mi->module, flags);
-            continue;
-        }
-
-        if (bv_set_contains_(bv_files_, mi->src)) {
-            continue;
-        }
-
-        bv_set_insert_(bv_files_, mi->src);
-
-        bool should_recomp = 0;
-
-        //  TODO: windows
-        // check if directory exists
-        {
-            bv_bcmd_(&cmd, &len, &size, BEAVER_DIRECTORY, 0);
-            bv_bcmd_(&cmd, &len, &size, mi->src, 0);
-
-            // beaver directory gurantees one /
-            char* d = rindex(cmd, '/');
-            *d = 0;
-
-            if (access(cmd, F_OK) != 0) {
-                *cmd = 0;
-                len = 0;
-                bv_bcmd_(&cmd, &len, &size, "mkdir -p " BEAVER_DIRECTORY, 0);
-                bv_bcmd_(&cmd, &len, &size, mi->src, 0);
-                d = rindex(cmd, '/'); // same as above
-                *d = 0;
-                call_or_warn(cmd);
-                should_recomp = 1;
-            }
+        if (access(cmd, F_OK) != 0) {
             *cmd = 0;
             len = 0;
+            bv_bcmd_(&cmd, &len, &size, "mkdir -p " BEAVER_DIRECTORY, 0);
+            bv_bcmd_(&cmd, &len, &size, mi->src, 0);
+            d = rindex(cmd, '/'); // same as above
+            *d = 0;
+            call_or_warn(cmd);
+            should_recomp = 1;
         }
+        *cmd = 0;
+        len = 0;
 
         // check if file was altered
         if (!should_recomp) {
@@ -508,30 +482,55 @@ static inline void bv_compile_module_(char* name, char* flags)
             *cmd = 0;
             len = 0;
         }
-
-        if (should_recomp) {
-            bv_bcmd_(&cmd, &len, &size, COMPILER " -c -o " BEAVER_DIRECTORY, 0);
-            bv_bcmd_(&cmd, &len, &size, mi->src, 0);
-            bv_bcmd_(&cmd, &len, &size, ".o", 0);
-            bv_bcmd_(&cmd, &len, &size, flags, 1);
-            bv_bcmd_(&cmd, &len, &size, mi->extra_flags, 1);
-            bv_bcmd_(&cmd, &len, &size, mi->src, 1);
+    }
+    if (should_recomp) {
+        bv_bcmd_(&cmd, &len, &size, COMPILER " -c -o " BEAVER_DIRECTORY, 0);
+        bv_bcmd_(&cmd, &len, &size, mi->src, 0);
+        bv_bcmd_(&cmd, &len, &size, ".o", 0);
+        bv_bcmd_(&cmd, &len, &size, flags, 1);
+        bv_bcmd_(&cmd, &len, &size, mi->extra_flags, 1);
+        bv_bcmd_(&cmd, &len, &size, mi->src, 1);
 
 #ifdef BV_ASYNC_
-            bv_pool_add_(bv_pool_, (void (*)(void*))bv_async_call_, cmd);
-            cmd = NULL;
-            len = 0;
-            size = 0;
+        bv_pool_add_(bv_pool_, (void (*)(void*))bv_async_call_, cmd);
+        cmd = NULL;
+        len = 0;
+        size = 0;
 #else
-            call_or_panic(cmd);
-            *cmd = 0;
-            len = 0;
+        call_or_panic(cmd);
+        *cmd = 0;
+        len = 0;
 #endif
-        }
-
-        bv_eflags_add_(mi->extra_flags);
     }
     free(cmd);
+}
+
+static inline void bv_compile_module_(char* name, char* flags)
+{
+    // module already compiled
+    if (bv_set_contains_(bv_modules_, name)) {
+        return;
+    }
+    bv_set_insert_(bv_modules_, name);
+    module_t* mi = NULL;
+    for (mi = modules; mi != modules + modules_len; mi++) {
+        if (strcmp(mi->name, name) != 0) {
+            continue;
+        }
+
+        if (*mi->module != 0) {
+            bv_compile_module_(mi->module, flags);
+            continue;
+        }
+
+        if (bv_set_contains_(bv_files_, mi->src)) {
+            continue;
+        }
+
+        bv_set_insert_(bv_files_, mi->src);
+        bv_compile_file_(mi, flags);
+        bv_eflags_add_(mi->extra_flags);
+    }
 }
 
 static inline void compile(char** program, char* flags)
@@ -594,12 +593,19 @@ static inline void compile(char** program, char* flags)
     bv_set_free_(bv_modules_);
 }
 
-static inline void prepare_all()
+static inline void prepare_all(char* flags)
 {
 #ifdef BV_ASYNC_
     bv_pool_ = bv_pool_create_();
 #endif
-    // TODO 
+
+    module_t* mi;
+    for (mi = modules; mi != modules + modules_len; mi++) {
+        if (*mi->src != 0) {
+            bv_compile_file_(mi, flags);
+        }
+    }
+
 #ifdef BV_ASYNC_
     bv_pool_free_(bv_pool_);
 #endif

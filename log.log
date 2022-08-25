@@ -1,0 +1,222 @@
+In file included from beaver.c:1:
+beaver.h: In function ‘bv_compile_file_’:
+beaver.h:447:24: warning: passing argument 2 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  447 |         bv_bcmd_(&cmd, &len, &size, BEAVER_DIRECTORY, 0);
+      |                        ^~~~
+      |                        |
+      |                        uint64_t * {aka long unsigned int *}
+beaver.h:275:27: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                 ~~~~~~~~~~^~~
+beaver.h:447:30: warning: passing argument 3 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  447 |         bv_bcmd_(&cmd, &len, &size, BEAVER_DIRECTORY, 0);
+      |                              ^~~~~
+      |                              |
+      |                              uint64_t * {aka long unsigned int *}
+beaver.h:275:42: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                                ~~~~~~~~~~^~~~
+beaver.h:448:24: warning: passing argument 2 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  448 |         bv_bcmd_(&cmd, &len, &size, mi->src, 0);
+      |                        ^~~~
+      |                        |
+      |                        uint64_t * {aka long unsigned int *}
+beaver.h:275:27: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                 ~~~~~~~~~~^~~
+beaver.h:448:30: warning: passing argument 3 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  448 |         bv_bcmd_(&cmd, &len, &size, mi->src, 0);
+      |                              ^~~~~
+      |                              |
+      |                              uint64_t * {aka long unsigned int *}
+beaver.h:275:42: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                                ~~~~~~~~~~^~~~
+beaver.h:457:28: warning: passing argument 2 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  457 |             bv_bcmd_(&cmd, &len, &size, "mkdir -p " BEAVER_DIRECTORY, 0);
+      |                            ^~~~
+      |                            |
+      |                            uint64_t * {aka long unsigned int *}
+beaver.h:275:27: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                 ~~~~~~~~~~^~~
+beaver.h:457:34: warning: passing argument 3 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  457 |             bv_bcmd_(&cmd, &len, &size, "mkdir -p " BEAVER_DIRECTORY, 0);
+      |                                  ^~~~~
+      |                                  |
+      |                                  uint64_t * {aka long unsigned int *}
+beaver.h:275:42: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                                ~~~~~~~~~~^~~~
+beaver.h:458:28: warning: passing argument 2 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  458 |             bv_bcmd_(&cmd, &len, &size, mi->src, 0);
+      |                            ^~~~
+      |                            |
+      |                            uint64_t * {aka long unsigned int *}
+beaver.h:275:27: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                 ~~~~~~~~~~^~~
+beaver.h:458:34: warning: passing argument 3 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  458 |             bv_bcmd_(&cmd, &len, &size, mi->src, 0);
+      |                                  ^~~~~
+      |                                  |
+      |                                  uint64_t * {aka long unsigned int *}
+beaver.h:275:42: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                                ~~~~~~~~~~^~~~
+beaver.h:469:28: warning: passing argument 2 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  469 |             bv_bcmd_(&cmd, &len, &size, BEAVER_DIRECTORY, 0);
+      |                            ^~~~
+      |                            |
+      |                            uint64_t * {aka long unsigned int *}
+beaver.h:275:27: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                 ~~~~~~~~~~^~~
+beaver.h:469:34: warning: passing argument 3 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  469 |             bv_bcmd_(&cmd, &len, &size, BEAVER_DIRECTORY, 0);
+      |                                  ^~~~~
+      |                                  |
+      |                                  uint64_t * {aka long unsigned int *}
+beaver.h:275:42: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                                ~~~~~~~~~~^~~~
+beaver.h:470:28: warning: passing argument 2 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  470 |             bv_bcmd_(&cmd, &len, &size, mi->src, 0);
+      |                            ^~~~
+      |                            |
+      |                            uint64_t * {aka long unsigned int *}
+beaver.h:275:27: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                 ~~~~~~~~~~^~~
+beaver.h:470:34: warning: passing argument 3 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  470 |             bv_bcmd_(&cmd, &len, &size, mi->src, 0);
+      |                                  ^~~~~
+      |                                  |
+      |                                  uint64_t * {aka long unsigned int *}
+beaver.h:275:42: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                                ~~~~~~~~~~^~~~
+beaver.h:471:28: warning: passing argument 2 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  471 |             bv_bcmd_(&cmd, &len, &size, ".o", 0);
+      |                            ^~~~
+      |                            |
+      |                            uint64_t * {aka long unsigned int *}
+beaver.h:275:27: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                 ~~~~~~~~~~^~~
+beaver.h:471:34: warning: passing argument 3 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  471 |             bv_bcmd_(&cmd, &len, &size, ".o", 0);
+      |                                  ^~~~~
+      |                                  |
+      |                                  uint64_t * {aka long unsigned int *}
+beaver.h:275:42: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                                ~~~~~~~~~~^~~~
+beaver.h:487:24: warning: passing argument 2 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  487 |         bv_bcmd_(&cmd, &len, &size, COMPILER " -c -o " BEAVER_DIRECTORY, 0);
+      |                        ^~~~
+      |                        |
+      |                        uint64_t * {aka long unsigned int *}
+beaver.h:275:27: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                 ~~~~~~~~~~^~~
+beaver.h:487:30: warning: passing argument 3 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  487 |         bv_bcmd_(&cmd, &len, &size, COMPILER " -c -o " BEAVER_DIRECTORY, 0);
+      |                              ^~~~~
+      |                              |
+      |                              uint64_t * {aka long unsigned int *}
+beaver.h:275:42: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                                ~~~~~~~~~~^~~~
+beaver.h:488:24: warning: passing argument 2 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  488 |         bv_bcmd_(&cmd, &len, &size, mi->src, 0);
+      |                        ^~~~
+      |                        |
+      |                        uint64_t * {aka long unsigned int *}
+beaver.h:275:27: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                 ~~~~~~~~~~^~~
+beaver.h:488:30: warning: passing argument 3 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  488 |         bv_bcmd_(&cmd, &len, &size, mi->src, 0);
+      |                              ^~~~~
+      |                              |
+      |                              uint64_t * {aka long unsigned int *}
+beaver.h:275:42: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                                ~~~~~~~~~~^~~~
+beaver.h:489:24: warning: passing argument 2 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  489 |         bv_bcmd_(&cmd, &len, &size, ".o", 0);
+      |                        ^~~~
+      |                        |
+      |                        uint64_t * {aka long unsigned int *}
+beaver.h:275:27: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                 ~~~~~~~~~~^~~
+beaver.h:489:30: warning: passing argument 3 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  489 |         bv_bcmd_(&cmd, &len, &size, ".o", 0);
+      |                              ^~~~~
+      |                              |
+      |                              uint64_t * {aka long unsigned int *}
+beaver.h:275:42: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                                ~~~~~~~~~~^~~~
+beaver.h:490:37: error: ‘flags’ undeclared (first use in this function)
+  490 |         bv_bcmd_(&cmd, &len, &size, flags, 1);
+      |                                     ^~~~~
+beaver.h:490:37: note: each undeclared identifier is reported only once for each function it appears in
+beaver.h:490:24: warning: passing argument 2 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  490 |         bv_bcmd_(&cmd, &len, &size, flags, 1);
+      |                        ^~~~
+      |                        |
+      |                        uint64_t * {aka long unsigned int *}
+beaver.h:275:27: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                 ~~~~~~~~~~^~~
+beaver.h:490:30: warning: passing argument 3 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  490 |         bv_bcmd_(&cmd, &len, &size, flags, 1);
+      |                              ^~~~~
+      |                              |
+      |                              uint64_t * {aka long unsigned int *}
+beaver.h:275:42: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                                ~~~~~~~~~~^~~~
+beaver.h:491:24: warning: passing argument 2 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  491 |         bv_bcmd_(&cmd, &len, &size, mi->extra_flags, 1);
+      |                        ^~~~
+      |                        |
+      |                        uint64_t * {aka long unsigned int *}
+beaver.h:275:27: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                 ~~~~~~~~~~^~~
+beaver.h:491:30: warning: passing argument 3 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  491 |         bv_bcmd_(&cmd, &len, &size, mi->extra_flags, 1);
+      |                              ^~~~~
+      |                              |
+      |                              uint64_t * {aka long unsigned int *}
+beaver.h:275:42: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                                ~~~~~~~~~~^~~~
+beaver.h:492:24: warning: passing argument 2 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  492 |         bv_bcmd_(&cmd, &len, &size, mi->src, 1);
+      |                        ^~~~
+      |                        |
+      |                        uint64_t * {aka long unsigned int *}
+beaver.h:275:27: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                 ~~~~~~~~~~^~~
+beaver.h:492:30: warning: passing argument 3 of ‘bv_bcmd_’ from incompatible pointer type [-Wincompatible-pointer-types]
+  492 |         bv_bcmd_(&cmd, &len, &size, mi->src, 1);
+      |                              ^~~~~
+      |                              |
+      |                              uint64_t * {aka long unsigned int *}
+beaver.h:275:42: note: expected ‘uint32_t *’ {aka ‘unsigned int *’} but argument is of type ‘uint64_t *’ {aka ‘long unsigned int *’}
+  275 |     char** cmd, uint32_t* len, uint32_t* size, char* s, bool space)
+      |                                ~~~~~~~~~~^~~~
+beaver.h: In function ‘bv_compile_module_’:
+beaver.h:518:14: warning: unused variable ‘size’ [-Wunused-variable]
+  518 |     uint32_t size = 0;
+      |              ^~~~
+beaver.h:517:14: warning: unused variable ‘len’ [-Wunused-variable]
+  517 |     uint32_t len = 0;
+      |              ^~~
+make: *** [Makefile:2: all] Error 1
