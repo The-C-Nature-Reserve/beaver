@@ -3,7 +3,7 @@
 #define FLAGS "-g -Wall -Werror -Og"
 
 module_t modules[] = {
-    { .name = "example", .src = "example.c" },
+    { .name = "example", .src = "example.c", .extra_flags="`sdl2-config --libs --cflags`" },
 };
 
 uint32_t modules_len = sizeof(modules) / sizeof(*modules);

@@ -408,8 +408,15 @@ static void bv_eflags_add_(char* flags)
             s++;
         }
         start = s;
-        while (*s && !isspace(*s)) {
+        if (*s == '`') {
+            do {
+                s++;
+            } while (*s && *s != '`');
             s++;
+        } else {
+            while (*s && !isspace(*s)) {
+                s++;
+            }
         }
         if (start != s) {
             *s = 0;
